@@ -149,15 +149,15 @@ def create_xml_file():
     for index in range(16,58):     
         print "%s: %s" % (tab_dic[index][0],tab_dic[index][3])
         
-        L1 = excel_table_byindex("excel.xls",2,index)
+        L2 = excel_table_byindex("excel.xls",2,index)
         table=et.SubElement(protocol_private,"TABLE")
         for i in range(len(table_attrib)):
             table.set(table_attrib[i],tab_dic[index][i].strip())
 
-        for i in range(len(L)):
+        for i in range(len(L2)):
             item=et.SubElement(table,"ITEM")
             for j in range(6):               
-                item.set(item_attrib[j],unicode(L[i][j]).strip())
+                item.set(item_attrib[j],unicode(L2[i][j]).strip())
             for k in range(6,len(item_attrib)):
                 item.set(item_attrib[k],"")
 
