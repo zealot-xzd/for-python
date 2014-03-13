@@ -1,24 +1,23 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import string
 import os
 import xlrd
 import lxml.etree as et
 
-item_attrib=["run_name", "ga_code", "ch_name", "type", "len", "isnull",
-             "db_name", "output", "ignore", "from", "value"]
-table_attrib=["key", "protocol", "tabname", "markname", "expand_fields",
-              "common_fields", "mark_fields", "oracle", "hbase", "basedata"]
+item_attrib=["run_name", "ga_code", "ch_name", "type", "len", "isnull", "db_name", "output", "ignore", "from", "value"]
+table_attrib=["key", "protocol", "tabname", "markname", "expand_fields", "common_fields", "mark_fields", "oracle", "hbase", "basedata"]
 
 tab_dic={
 16:["WA_SOURCE_0001","DATA_HTTP","http_tb","http,wap","true","true","true","true","true","true"],
 17:["WA_SOURCE_0002","DATA_EMAIL","email_tb","email,webmail","true","true","true","true","true","true"],
-18:["WA_SOURCE_0003","DATA_FTP","ftp_tb","ftp","true","true","true","true","true","true"], 
+18:["WA_SOURCE_0003","DATA_FTP","ftp_tb","ftp","true","true","true","true","true","true"],
 19:["WA_SOURCE_0004","DATA_TELNET","telnet_tb","telnet","true","true","true","true","true","true"],
-20:["WA_SOURCE_0005","DATA_IM","im_tb","im","true","true","true","true","true","true"], 
+20:["WA_SOURCE_0005","DATA_IM","im_tb","im","true","true","true","true","true","true"],
 21:["WA_SOURCE_0006","DATA_GAME","game_tb","game","true","true","true","true","true","true"],
 22:["WA_SOURCE_0007","DATA_WEBCHAT","webchat_tb","webchat","true","true","true","true","true","true"],
-23:["WA_SOURCE_0008","DATA_WEBBBS","webbbs_tb","webbbs","true","true","true","true","true","true"], 
+23:["WA_SOURCE_0008","DATA_WEBBBS","webbbs_tb","webbbs","true","true","true","true","true","true"],
 24:["WA_SOURCE_0009","DATA_VOIP","voip_tb","voip","true","true","true","true","true","true"],
 25:["WA_SOURCE_0010","DATA_HTTPS","https_tb","https","true","true","true","true","true","true"],
 26:["WA_SOURCE_0011","DATA_VPN","vpn_tb","vpn","true","true","true","true","true","true"],
@@ -59,22 +58,30 @@ tab_dic={
 58:["RUN_SOURCE_9998","DATA_PERSONINFO","PERSONINFO_tb","personinfo","true","true","true","true","true","true"]
 }
 
+#the index of sheet to read
+sheet_index=[16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
+             28, 29, 30, 32,33, 34, 35, 36, 37, 38, 39, 40,
+             41, 42, 43, 44, 45, 46,48, 49, 50, 51, 52,
+             53, 54, 55, 56, 57, 58]
+
 path=".\\xml"
 filename_fmt=path+"\\fmt.xml"
-filename_index=path+"\\index.xml"      
+filename_index=path+"\\index.xml"
+
+#create directory
 def my_mkdir(path):
 
     path=path.strip()
     path=path.rstrip("\\")
     isexist=os.path.exists(path)
- 
-    if not isexist:        
+
+    if not isexist:
         os.makedirs(path)
         return True
     else:
         return False
 
-#read excel file.
+#open excel file.
 def open_excel(file = "excel.xls"):
     try:
         data = xlrd.open_workbook(file)
@@ -83,110 +90,143 @@ def open_excel(file = "excel.xls"):
         print str(e);
 
 #read sheet of excel by index, and return the records of the sheet.
-def excel_table_byindex(file="excel.xls", rownameindex=0, by_index=0):
+def read_sheets_byindex(file="excel.xls", rownameindex=0, by_index=0):
     data = open_excel(file)
     table = data.sheets()[by_index]
     nrows = table.nrows
     ncols = table.ncols
-    list = []
-    for rownum in range(2,nrows):
+    sheet_list = []
+    for rownum in range(rownameindex,nrows):
         row = table.row_values(rownum)
-        if row[2]!="":
+        if row[rownameindex]!="":
             app = []
-            for i in range(ncols):
-                app = row[2:17]
-            list.append(app)
-    return list
-    
+            app = row[rownameindex:20]
+            sheet_list.append(app)
+    return sheet_list
+
 
 #convert the excel file to xml file.
 def create_xml_file():
-    
-    file_name_fmt=open(filename_fmt, "wb+")  
+
+    #prepare for fmt file
+    file_name_fmt=open(filename_fmt, "wb+")
     root_fmt = et.Element("MESSAGE", attrib={"key":"", "description":""})
-    
-    
-    #read expand,mark,common fields.
-    
-    L = excel_table_byindex("excel.xls",2,3)
-    run_expand=et.SubElement(root_fmt,"RUN_EXPAND_FIELDS",attrib={"key":"", "description":""})
-    for i in range(6):
-        item=et.SubElement(run_expand,"ITEM")
-        for j in range(6):  
-            item.set(item_attrib[j],unicode(L[i][j]).strip())
-        for k in range(6,len(item_attrib)):
-                item.set(item_attrib[k],"")
-                            
-    mark_fields=et.SubElement(root_fmt,"MARK_FIELDS",attrib={"key":"", "description":""})    
-    for i in range(6,len(L)):
-        item=et.SubElement(mark_fields,"ITEM")
-        for j in range(6):
-            item.set(item_attrib[j],unicode(L[i][j]).strip())
-        for k in range(6,len(item_attrib)):
-                item.set(item_attrib[k],"")
-            
-    L = excel_table_byindex("excel.xls",2,15)
-    protocol_common=et.SubElement(root_fmt,"PROTOCOL_COMMON_FIELDS",attrib={"key":"", "description":""})
-    for i in range(len(L)):
-        item=et.SubElement(protocol_common,"ITEM")
-        for j in range(6):          
-            item.set(item_attrib[j],unicode(L[i][j]).strip())
-        for k in range(6,len(item_attrib)):
-                item.set(item_attrib[k],"")   
-           
-    #read private fields of each protocol.
-                
-    protocol_private=et.SubElement(root_fmt,"PROTOCOL_PRIVATE_FIELDS",attrib={"key":"", "description":""})
 
-
+    #prepare index file 
     file_name_index=open(filename_index, "wb+")
     root_index = et.Element("MESSAGE")
     dataset=et.SubElement(root_index,"DATASET",attrib={"name":"WA_COMMON_010017", "rmk":""})
     data=et.SubElement(dataset,"DATA")
     dataset1=et.SubElement(data,"DATASET",attrib={"name":"WA_COMMON_010013", "rmk":""})
 
-    
-    for index in range(16,58):     
+    #read expand fields
+    L = read_sheets_byindex("excel.xls",2,3)
+    run_expand=et.SubElement(root_fmt,"RUN_EXPAND_FIELDS",attrib={"key":"", "description":""})
+    for i in range(6):
+        item=et.SubElement(run_expand,"ITEM")
+        for j in range(6):
+            if unicode(L[i][j]).strip()=="是":
+                L[i][j]="false"
+            item.set(item_attrib[j],unicode(L[i][j]).strip())
+        for k in range(6,len(item_attrib)):
+                item.set(item_attrib[k],"")
+
+    #read mark fields
+    mark_fields=et.SubElement(root_fmt,"MARK_FIELDS",attrib={"key":"", "description":""})
+    for i in range(6,len(L)):
+        item=et.SubElement(mark_fields,"ITEM")
+        for j in range(6):
+            if unicode(L[i][j]).strip()=="是":
+                L[i][j]="false"
+            item.set(item_attrib[j],unicode(L[i][j]).strip())
+        for k in range(6,len(item_attrib)):
+                item.set(item_attrib[k],"")
+
+    #read common fields               
+    L = read_sheets_byindex("excel.xls",2,15)
+    protocol_common=et.SubElement(root_fmt,"PROTOCOL_COMMON_FIELDS",attrib={"key":"", "description":""})
+    for i in range(len(L)):
+        item=et.SubElement(protocol_common,"ITEM")
+        for j in range(6):
+            if unicode(L[i][j]).strip()=="是":
+                L[i][j]="false"
+            item.set(item_attrib[j],unicode(L[i][j]).strip())
+        for k in range(6,len(item_attrib)):
+                item.set(item_attrib[k],"")
+
+    #read private fields of each protocol.
+    protocol_private=et.SubElement(root_fmt,"PROTOCOL_PRIVATE_FIELDS",attrib={"key":"", "description":""})
+
+    for index in sheet_index:
         print "%s: %s" % (tab_dic[index][0],tab_dic[index][3])
-        
-        L2 = excel_table_byindex("excel.xls",2,index)
+
+        #create fmt file
+        L2 = read_sheets_byindex("excel.xls",2,index)
         table=et.SubElement(protocol_private,"TABLE")
         for i in range(len(table_attrib)):
             table.set(table_attrib[i],tab_dic[index][i].strip())
 
         for i in range(len(L2)):
             item=et.SubElement(table,"ITEM")
-            for j in range(6):               
+            for j in range(6):
+                if unicode(L[i][j]).strip()=="是":
+                    L[i][j]="false"
                 item.set(item_attrib[j],unicode(L2[i][j]).strip())
             for k in range(6,len(item_attrib)):
                 item.set(item_attrib[k],"")
 
-        
+        #create index file
         data1=et.SubElement(dataset1,"DATA")
-        item=et.SubElement(data1,"ITEM",attrib={"key":"I010032", "val":"", "rmk":""})
-        item=et.SubElement(data1,"ITEM",attrib={"key":"I010033", "val":"", "rmk":""})
-        item=et.SubElement(data1,"ITEM",attrib={"key":"A010004", "val":unicode(tab_dic[index][3]).strip(), "rmk":""})
-        item=et.SubElement(data1,"ITEM",attrib={"key":"B050016", "val":"111", "rmk":""})
-        item=et.SubElement(data1,"ITEM",attrib={"key":"F010008", "val":"441900", "rmk":""})
-        item=et.SubElement(data1,"ITEM",attrib={"key":"I010038", "val":"1", "rmk":""})
-        item=et.SubElement(data1,"ITEM",attrib={"key":"I010039", "val":"UTF-8", "rmk":""})
-        dataset2=et.SubElement(data1,"DATASET",attrib={"name":"WA_COMMON_010014", "rmk":""})
-        data2=et.SubElement(dataset2,"DATA")
-        item=et.SubElement(data2,"ITEM",attrib={"key":"H040003", "val":"", "rmk":""})
-        item=et.SubElement(data2,"ITEM",attrib={"key":"H010020", "val":"", "rmk":""})
-        item=et.SubElement(data2,"ITEM",attrib={"key":"I010034", "val":"", "rmk":""})
-        dataset3=et.SubElement(data1,"DATASET",attrib={"name":"WA_COMMON_010015", "rmk":""})
-        data3=et.SubElement(dataset3,"DATA")
-        
+        if unicode(tab_dic[index][3]).strip().find(',')>0:
+            sep=unicode(tab_dic[index][3]).strip().split(',')
+            add=0
+            for k in sep:     
+                item=et.SubElement(data1,"ITEM",attrib={"key":"I010032", "val":"", "rmk":""})
+                item=et.SubElement(data1,"ITEM",attrib={"key":"I010033", "val":"", "rmk":""})
+                item=et.SubElement(data1,"ITEM",attrib={"key":"A010004", "val":k, "rmk":""})
+                item=et.SubElement(data1,"ITEM",attrib={"key":"B050016", "val":"111", "rmk":""})
+                item=et.SubElement(data1,"ITEM",attrib={"key":"F010008", "val":"441900", "rmk":""})
+                item=et.SubElement(data1,"ITEM",attrib={"key":"I010038", "val":"1", "rmk":""})
+                item=et.SubElement(data1,"ITEM",attrib={"key":"I010039", "val":"UTF-8", "rmk":""})
+                dataset2=et.SubElement(data1,"DATASET",attrib={"name":"WA_COMMON_010014", "rmk":""})
+                data2=et.SubElement(dataset2,"DATA")
+                item=et.SubElement(data2,"ITEM",attrib={"key":"H040003", "val":"", "rmk":""})
+                item=et.SubElement(data2,"ITEM",attrib={"key":"H010020", "val":"", "rmk":""})
+                item=et.SubElement(data2,"ITEM",attrib={"key":"I010034", "val":"", "rmk":""})
+                dataset3=et.SubElement(data1,"DATASET",attrib={"name":"WA_COMMON_010015", "rmk":""})
+                data3=et.SubElement(dataset3,"DATA")
+                
+                for i in range(len(L)):
+                    if unicode(L[i][12]).strip()!="":
+                        item=et.SubElement(data3,"ITEM",attrib={"name":unicode(L[i][12]).strip(),"key":unicode(L[i][1]).strip(), "val":"", "rmk":unicode(L[i][2]).strip()})
+                for i in range(len(L2)):
+                    if unicode(L2[i][12]).strip()!="":
+                        item=et.SubElement(data3,"ITEM",attrib={"name":unicode(L2[i][12+add]).strip(),"key":unicode(L2[i][1]).strip(), "val":"", "rmk":unicode(L2[i][2]).strip()})
+                add+=4
+        else:
+            item=et.SubElement(data1,"ITEM",attrib={"key":"I010032", "val":"", "rmk":""})
+            item=et.SubElement(data1,"ITEM",attrib={"key":"I010033", "val":"", "rmk":""})
+            item=et.SubElement(data1,"ITEM",attrib={"key":"A010004", "val":unicode(tab_dic[index][3]).strip(), "rmk":""})
+            item=et.SubElement(data1,"ITEM",attrib={"key":"B050016", "val":"111", "rmk":""})
+            item=et.SubElement(data1,"ITEM",attrib={"key":"F010008", "val":"441900", "rmk":""})
+            item=et.SubElement(data1,"ITEM",attrib={"key":"I010038", "val":"1", "rmk":""})
+            item=et.SubElement(data1,"ITEM",attrib={"key":"I010039", "val":"UTF-8", "rmk":""})
+            dataset2=et.SubElement(data1,"DATASET",attrib={"name":"WA_COMMON_010014", "rmk":""})
+            data2=et.SubElement(dataset2,"DATA")
+            item=et.SubElement(data2,"ITEM",attrib={"key":"H040003", "val":"", "rmk":""})
+            item=et.SubElement(data2,"ITEM",attrib={"key":"H010020", "val":"", "rmk":""})
+            item=et.SubElement(data2,"ITEM",attrib={"key":"I010034", "val":"", "rmk":""})
+            dataset3=et.SubElement(data1,"DATASET",attrib={"name":"WA_COMMON_010015", "rmk":""})
+            data3=et.SubElement(dataset3,"DATA")        
+
         for i in range(len(L)):
             if unicode(L[i][12]).strip()!="":
                 item=et.SubElement(data3,"ITEM",attrib={"name":unicode(L[i][12]).strip(),"key":unicode(L[i][1]).strip(), "val":"", "rmk":unicode(L[i][2]).strip()})
-        L1 = excel_table_byindex("excel.xls",2,index)
-        for i in range(len(L1)):
-            if unicode(L1[i][12]).strip()!="":
-                item=et.SubElement(data3,"ITEM",attrib={"name":unicode(L1[i][12]).strip(),"key":unicode(L1[i][1]).strip(), "val":"", "rmk":unicode(L1[i][2]).strip()})
-                    
-                                   
+        for i in range(len(L2)):
+            if unicode(L2[i][12]).strip()!="":
+                item=et.SubElement(data3,"ITEM",attrib={"name":unicode(L2[i][12]).strip(),"key":unicode(L2[i][1]).strip(), "val":"", "rmk":unicode(L2[i][2]).strip()})
+
+
     file_name_fmt.write('<?xml version="1.0" encoding="UTF-8" ?>\n'.encode("utf8"))
     file_name_fmt.write(et.tounicode(root_fmt,pretty_print=True).encode('utf8'))
     print "create fmt xml file ok!"
@@ -198,12 +238,12 @@ def create_xml_file():
     file_name_index.close()
 
 def main():
-    
+
     my_mkdir(path)
     create_xml_file()
-    
+
 if __name__=="__main__":
     main()
-    
-    
-    
+
+
+
