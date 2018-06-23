@@ -5,6 +5,7 @@ from xlrd import open_workbook
 from zipfile import ZipFile
 from zipfile import ZIP_STORED
 import time
+import random
 
 dataSetFile=r"F:\\tmp_dir\\baiyin\\code\\YCL003\\metadata\\dataset.xml"
 fieldSetFile=r"F:\\tmp_dir\\baiyin\\code\\YCL003\\metadata\\fieldset.xml"
@@ -71,7 +72,7 @@ def create_ga_zip_index(xmlFile,fields,protocolName,filename):
 	parent.append(newData)
 
 	indent(root)
-	print(etree.tostring(root,pretty_print=True,encoding="utf-8"))
+	#print(etree.tostring(root,pretty_print=True,encoding="utf-8"))
 
 	tree=etree.ElementTree(root)
 	tree.write("GAB_ZIP_INDEX.xml",pretty_print=True,xml_declaration=True,encoding="utf-8")
@@ -142,9 +143,9 @@ def main():
 		dirName=sys.argv[2]
 	else:
 		dirName=os.path.dirname(sys.argv[2])
-
-	bcpName="144-0-"+str(timestamp)+"-83788-"+str(sys.argv[1])+"-0.bcp"
-	zipName=os.path.join(dirName,"144-746736751-620000-620000-"+str(timestamp)+"-83788.zip")
+	randStr=str(random.randint(0,9999))
+	bcpName="144-0-"+str(timestamp)+"-83788-"+str(sys.argv[1])+"-"+randStr+".bcp"
+	zipName=os.path.join(dirName,"144-746736751-620000-620000-"+str(timestamp)+"-"+randStr+".zip")
 
 
 
