@@ -32,6 +32,21 @@ def get_protocol_fields(xmlFile,protocol_components):
 		fields.extend(protocol_fields)
 	return fields
 
+def indent(elem, level=0):
+    i = "\n" + level*'\t'
+    if len(elem):
+        if not elem.text or not elem.text.strip():
+            elem.text = i + '\t' 
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+        for elem in elem:
+            indent(elem, level+1)
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+    else:
+        if level and (not elem.tail or not elem.tail.strip()):
+            elem.tail = i
+
 def create_ga_zip_index(xmlFile,fields,protocolName,filename):
 	xmlDoc=etree.parse(xmlFile)
 	root=xmlDoc.getroot()
@@ -55,7 +70,8 @@ def create_ga_zip_index(xmlFile,fields,protocolName,filename):
 		child.set("key",field[2])
 	parent.append(newData)
 
-	#print(etree.tostring(root,pretty_print=True,encoding="utf-8"))
+	indent(root)
+	print(etree.tostring(root,pretty_print=True,encoding="utf-8"))
 
 	tree=etree.ElementTree(root)
 	tree.write("GAB_ZIP_INDEX.xml",pretty_print=True,xml_declaration=True,encoding="utf-8")
