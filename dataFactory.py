@@ -2,6 +2,7 @@ from lxml import etree
 import sys
 import os
 from xlrd import open_workbook
+import xlwt
 from zipfile import ZipFile
 from zipfile import ZIP_STORED
 import time
@@ -122,9 +123,16 @@ def get_field_map(index_fields,data_fields):
 		if not find:
 			field_map.append((item[2],-1,item[3]))
 	return field_map
+def get_style():
+	pattern = xlwt.Pattern() # Create the Pattern
+	pattern.pattern = xlwt.Pattern.SOLID_PATTERN # May be: NO_PATTERN, SOLID_PATTERN, or 0x00 through 0x12
+	pattern.pattern_fore_colour = 2 # May be: 8 through 63. 0 = Black, 1 = White, 2 = Red, 3 = Green, 4 = Blue, 5 = Yellow, 6 = Magenta, 7 = Cyan, 16 = Maroon, 17 = Dark Green, 18 = Dark Blue, 19 = Dark Yellow , almost brown), 20 = Dark Magenta, 21 = Teal, 22 = Light Gray, 23 = Dark Gray, the list goes on...
+	style = xlwt.XFStyle() # Create the Pattern
+	style.pattern = pattern # Add Pattern to Style
+	return style
 
 def main():
-	if len(sys.argv) < 3:
+	if len(sys.argv) < 2:
 		print("python %s WA_SOURCE_0001 xxx.xlsx" % sys.argv[0])
 		exit(1)
 
@@ -132,6 +140,18 @@ def main():
 	protocol_components=protocol_field_component_map[sys.argv[1]].split(',')
 	print(protocol_components)	
 	fields=get_protocol_fields(fieldSetFile, protocol_components)
+	if len(sys.argv) == 2:
+		workbook = xlwt.Workbook(encoding = 'utf-8')
+		worksheet = workbook.add_sheet(sys.argv[1])
+		for row in range(len(fields)):
+			if(fields[row][4] == "true"):
+				worksheet.write(0,row,fields[row][0],get_style())
+			else:
+				worksheet.write(0,row,fields[row][0])
+
+		workbook.save(sys.argv[1]+".xls")
+		return
+
 	print("\n必填字段\n")
 	for i in fields:
 		if i[4]=="true":
