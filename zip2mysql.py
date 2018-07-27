@@ -12,7 +12,7 @@ gab_zip_index_files_xpath = ".//DATASET[@name='WA_COMMON_010014']/DATA/ITEM[@key
 gab_zip_index_fields_key_xpath = ".//DATASET[@name='WA_COMMON_010015']/DATA/ITEM/@key"
 gab_zip_index_fields_chn_xpath = ".//DATASET[@name='WA_COMMON_010015']/DATA/ITEM/@chn"
 gab_zip_index_fields_eng_xpath = ".//DATASET[@name='WA_COMMON_010015']/DATA/ITEM/@eng"
-
+tmpdir="tmp"
 
 def get_protocol_info(xmlString):
     doc = etree.fromstring(xmlString)
@@ -51,6 +51,8 @@ def data_import(db, sql, dataList):
 
 
 def get_oneline(line):
+    line=line.replace('\r','')
+    line=line.replace('\n','')
     return tuple(line.split('\t'))
 
 
@@ -94,7 +96,7 @@ def main():
         dirName = sys.argv[1]
     else:
         dirName = os.path.dirname(sys.argv[1])
-    tmpDirName = os.path.join(dirName, "tmp")
+    tmpDirName = os.path.join(dirName, tmpdir)
     if not os.path.exists(tmpDirName):
         os.mkdir(tmpDirName)
 
@@ -102,13 +104,15 @@ def main():
     if os.path.isdir(sys.argv[1]):
         for root, dirs, files in os.walk(sys.argv[1]):
             for name in files:
+                if os.path.basename(root) == tmpdir:
+                    continue
                 if name.endswith(".zip"):
                     fileNames.append(os.path.join(root, name))
     else:
         if sys.argv[1].endswith(".zip"):
             fileNames.append(sys.argv[1])
 
-    # mysqldb = get_db(host,user,passwd,'sjqz',port)
+    #mysqldb = get_db(host,user,passwd,'sjqz',port)
 
     for file in fileNames:
         print("handleing file: " + file)
@@ -116,27 +120,27 @@ def main():
             protocol_info = get_protocol_info(zipfile.read("GAB_ZIP_INDEX.xml"))
             for key, value in protocol_info.items():
                 sql = get_sql(key, value)
-                print(sql)
-                # create_table(mysqldb,sql[0])
+                #print(sql)
+                #create_table(mysqldb,sql[0])
                 datalist = []
                 for bcpfile in value["files"]:
                     print(bcpfile)
+                    datalist.clear()
                     with zipfile.open(bcpfile, 'r') as zf:
                         try:
                             for oneline in zf.readlines():
-                                if len(datalist) >= count:
-                                    # data_import(mysqldb,sql[1],datalist)
-                                    datalist.clear()
-                                    print("commit %d lines" % count)
                                 datalist.append(get_oneline(oneline.decode("utf-8")))
+                                if len(datalist) >= count:
+                                    #data_import(mysqldb,sql[1],datalist)
+                                    print("commit %d lines" % len(datalist))
+                                    datalist.clear()
                             if len(datalist) > 0:
-                                # data_import(mysqldb,sql[1],datalist)
-                                print("commit lines %d" % len(datalist))
-                                pass
+                                #data_import(mysqldb,sql[1],datalist)
+                                print("commit %d lines" % len(datalist))
                         except Exception as e:
                             print(e)
         os.rename(file, os.path.join(tmpDirName, os.path.basename(file)))
-    # mysqldb.close()
+    #mysqldb.close()
 
 
 if __name__ == '__main__':
