@@ -1,0 +1,12 @@
+查看commit所属的分支
+
+#查本地所有分支
+git branch --contains CommitID
+#查远程所有分支
+git branch -r --contains CommitID
+#查本地和远程的所有分支
+git branch -a --contains CommitID
+
+
+查看分支从何时开始创建（默认90天之内）
+git reflog show <childBranch>
